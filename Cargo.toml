@@ -5,8 +5,9 @@ authors = ["Doimhneacht <hanna.rosul@gmail.com>"]
 
 [dependencies]
 
-gfx = "^0.16"
-gfx_app = "^0.5"
+gfx = { git = "https://github.com/gfx-rs/gfx.git" }
+gfx_app = { git = "https://github.com/gfx-rs/gfx.git" }
 glutin = "^0.8"
-gfx_window_glutin = "^0.16"
+gfx_window_glutin = { git = "https://github.com/gfx-rs/gfx.git" }
 rand = "^0.3"
+cgmath = "^0.14"
