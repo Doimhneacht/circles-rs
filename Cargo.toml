@@ -1,0 +1,6 @@
+[package]
+name = "circles-rs"
+version = "0.1.0"
+authors = ["Doimhneacht <hanna.rosul@gmail.com>"]
+
+[dependencies]
