@@ -4,3 +4,9 @@ version = "0.1.0"
 authors = ["Doimhneacht <hanna.rosul@gmail.com>"]
 
 [dependencies]
+
+gfx = "^0.16"
+gfx_app = "^0.4"
+glutin = "^0.7"
+gfx_window_glutin = "^0.14"
+rand = "^0.3"
