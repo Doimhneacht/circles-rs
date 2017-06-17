@@ -9,7 +9,7 @@ out vec4 Target0;
 
 void main() {
     float r = dot(VertexIn.uv, VertexIn.uv);
-    float d = 0.75;
+    float d = 0.5;
     float alpha = 1;
     if (r > 1) {
         alpha = 0;

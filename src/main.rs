@@ -13,6 +13,7 @@
 // limitations under the License.
 
 extern crate rand;
+extern crate cgmath;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_app;
@@ -22,6 +23,7 @@ use std::time::Instant;
 use gfx_app::ColorFormat;
 use gfx::{Bundle, ShaderSet, Primitive, buffer, Bind, Slice};
 use gfx::state::Rasterizer;
+use cgmath::{Matrix4, Vector3, ElementWise};
 
 // Declare the vertex format suitable for drawing,
 // as well as the constants used by the shaders
@@ -38,7 +40,7 @@ gfx_defines! {
 
     // Aspect ratio to keep particles round
     constant Locals {
-        aspect: f32 = "u_Aspect",
+        transformation: [[f32; 4]; 4] = "u_Transformation",
     }
 
     // Particle render pipeline
@@ -54,8 +56,8 @@ impl Vertex {
     fn new() -> Vertex {
         Vertex {
             pos: [std::f32::INFINITY, std::f32::INFINITY],
-            radius: 0.5,
-            time: 0.,
+            radius: 50.0,
+            time: 0.0,
             base_color: Default::default(),
             new_color: Default::default(),
         }
@@ -65,7 +67,7 @@ impl Vertex {
 struct App<R: gfx::Resources> {
     bundle: Bundle<R, circles::Data<R>>,
     circle: Vertex,
-    aspect: f32,
+    transformation: [[f32; 4]; 4],
     time_start: Instant,
 }
 
@@ -83,10 +85,6 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
     fn new<F: gfx::Factory<R>>(factory: &mut F, backend: gfx_app::shade::Backend,
                                window_targets: gfx_app::WindowTargets<R>) -> Self {
         use gfx::traits::FactoryExt;
-
-        // Compute the aspect ratio so that our particles aren't stretched
-        let (width, height, _, _) = window_targets.color.get_dimensions();
-        let aspect = (height as f32)/(width as f32);
 
         // Load in our vertex, geometry and pixel shaders
         let vs = gfx_app::shade::Source {
@@ -128,20 +126,26 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
             circles::new()
         ).unwrap();
 
+        circle.pos = [0.0, 0.0];
+        circle.base_color = [rand::random(), rand::random(), rand::random(), 1.0];
+        circle.new_color = [rand::random(), rand::random(), rand::random(), 1.0];
+
+        let (width, height, _, _) = window_targets.color.get_dimensions();
+
+        let scale_vector = Vector3::new(1.0 / width as f32 * 4.0, 1.0 / height as f32 * 4.0, 1.0);
+        let camera_translation = Matrix4::from_translation(Vector3::new(-100.0, -50.0, 0.0).mul_element_wise(scale_vector));
+        let scale = Matrix4::from_nonuniform_scale(scale_vector.x, scale_vector.y, scale_vector.z);
+
         let data = circles::Data {
             vbuf: vbuf,
             locals: factory.create_constant_buffer(1),
             out_color: window_targets.color,
         };
 
-        circle.pos = [0., 0.];
-        circle.base_color = [rand::random(), rand::random(), rand::random(), 1.];
-        circle.new_color = [rand::random(), rand::random(), rand::random(), 1.];
-
         App {
             bundle: Bundle::new(slice, pso, data),
             circle: circle,
-            aspect: aspect,
+            transformation: (camera_translation * scale).into(),
             time_start: Instant::now(),
         }
     }
@@ -162,7 +166,7 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
         }
 
         // Pass in the aspect ratio to the geometry shader
-        let locals = Locals { aspect: self.aspect };
+        let locals = Locals { transformation: self.transformation };
         encoder.update_constant_buffer(&self.bundle.data.locals, &locals);
         // Update the vertex data with the changes to the particles array
         encoder.update_buffer(&self.bundle.data.vbuf, &[self.circle], 0).unwrap();
@@ -179,5 +183,5 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
 
 pub fn main() {
     use gfx_app::Application;
-    App::launch_simple("circle-rs");
+    App::launch_simple("circles-rs");
 }
