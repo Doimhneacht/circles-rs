@@ -11,3 +11,4 @@ glutin = "^0.8"
 gfx_window_glutin = { git = "https://github.com/gfx-rs/gfx.git" }
 rand = "^0.3"
 cgmath = "^0.14"
+winit = "^0.6"

@@ -17,13 +17,15 @@ extern crate cgmath;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_app;
+extern crate winit;
 
 use std::time::Instant;
+use std::ops::Neg;
 
 use gfx_app::ColorFormat;
 use gfx::{Bundle, ShaderSet, Primitive, buffer, Bind, Slice};
 use gfx::state::Rasterizer;
-use cgmath::{Matrix4, Vector3, ElementWise};
+use cgmath::{Matrix4, Vector3, Vector2, Basis2, ElementWise, Zero, Rotation2, Rotation, Rad, Deg};
 
 // Declare the vertex format suitable for drawing,
 // as well as the constants used by the shaders
@@ -64,11 +66,46 @@ impl Vertex {
     }
 }
 
+struct Camera {
+    pub pos: Vector2<f32>,
+    pub up: bool,
+    pub right: bool,
+    pub down: bool,
+    pub left: bool,
+}
+
+impl Camera {
+    pub fn compute(&mut self, time: f32) {
+        self.pos += self.camera_speed() * time;
+    }
+
+    fn camera_speed(&self) -> Vector2<f32> {
+        let angle = match (self.up, self.right, self.down, self.left) {
+            (true, true, false, false) => 45.0,
+            (true, false, false, true) => 135.0,
+            (false, false, true, true) => 225.0,
+            (false, true, true, false) => 315.0,
+            (_, true, _, false) => 0.0,
+            (true, _, false, _) => 90.0,
+            (_, false, _, true) => 180.0,
+            (false, _, true, _) => 270.0,
+            _ => -1.0,
+        };
+
+        if angle == -1.0 {
+            return Vector2::zero();
+        }
+
+        Basis2::from_angle(Deg(angle))
+            .rotate_vector(Vector2::new(200.0, 0.0))
+    }
+}
+
 struct App<R: gfx::Resources> {
     bundle: Bundle<R, circles::Data<R>>,
     circle: Vertex,
-    transformation: [[f32; 4]; 4],
     time_start: Instant,
+    camera: Camera,
 }
 
 fn create_shader_set<R: gfx::Resources, F: gfx::Factory<R>>(factory: &mut F,
@@ -130,12 +167,6 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
         circle.base_color = [rand::random(), rand::random(), rand::random(), 1.0];
         circle.new_color = [rand::random(), rand::random(), rand::random(), 1.0];
 
-        let (width, height, _, _) = window_targets.color.get_dimensions();
-
-        let scale_vector = Vector3::new(1.0 / width as f32 * 4.0, 1.0 / height as f32 * 4.0, 1.0);
-        let camera_translation = Matrix4::from_translation(Vector3::new(-100.0, -50.0, 0.0).mul_element_wise(scale_vector));
-        let scale = Matrix4::from_nonuniform_scale(scale_vector.x, scale_vector.y, scale_vector.z);
-
         let data = circles::Data {
             vbuf: vbuf,
             locals: factory.create_constant_buffer(1),
@@ -145,8 +176,14 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
         App {
             bundle: Bundle::new(slice, pso, data),
             circle: circle,
-            transformation: (camera_translation * scale).into(),
             time_start: Instant::now(),
+            camera: Camera {
+                pos: Vector2::zero(),
+                up: false,
+                right: false,
+                down: false,
+                left: false,
+            }
         }
     }
 
@@ -165,8 +202,17 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
             self.circle.new_color = base_color;
         }
 
+        let (width, height, _, _) = self.bundle.data.out_color.get_dimensions();
+
+        self.camera.compute(delta);
+        let scale_vector = Vector3::new(1.0 / width as f32 * 4.0, 1.0 / height as f32 * 4.0, 1.0);
+        let camera_translation = Matrix4::from_translation(
+            self.camera.pos.neg().extend(0.0).mul_element_wise(scale_vector)
+        );
+        let scale = Matrix4::from_nonuniform_scale(scale_vector.x, scale_vector.y, scale_vector.z);
+
         // Pass in the aspect ratio to the geometry shader
-        let locals = Locals { transformation: self.transformation };
+        let locals = Locals { transformation: (camera_translation * scale).into() };
         encoder.update_constant_buffer(&self.bundle.data.locals, &locals);
         // Update the vertex data with the changes to the particles array
         encoder.update_buffer(&self.bundle.data.vbuf, &[self.circle], 0).unwrap();
@@ -178,6 +224,36 @@ impl<R: gfx::Resources> gfx_app::Application<R> for App<R> {
 
     fn on_resize(&mut self, window_targets: gfx_app::WindowTargets<R>) {
         self.bundle.data.out_color = window_targets.color;
+    }
+
+    fn on(&mut self, event: winit::WindowEvent) {
+        match event {
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::W), _) => {
+                self.camera.up = true;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::D), _) => {
+                self.camera.right = true;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::S), _) => {
+                self.camera.down = true;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::A), _) => {
+                self.camera.left = true;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::W), _) => {
+                self.camera.up = false;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::D), _) => {
+                self.camera.right = false;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::S), _) => {
+                self.camera.down = false;
+            },
+            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::A), _) => {
+                self.camera.left = false;
+            },
+            _ => ()
+        }
     }
 }
 
