@@ -6,9 +6,9 @@ authors = ["Doimhneacht <hanna.rosul@gmail.com>"]
 [dependencies]
 
 gfx = { git = "https://github.com/gfx-rs/gfx.git" }
-gfx_app = { git = "https://github.com/gfx-rs/gfx.git" }
-glutin = "^0.8"
+gfx_device_gl = { git = "https://github.com/gfx-rs/gfx.git" }
 gfx_window_glutin = { git = "https://github.com/gfx-rs/gfx.git" }
+glutin = "^0.8"
 rand = "^0.3"
 cgmath = "^0.14"
 winit = "^0.6"
