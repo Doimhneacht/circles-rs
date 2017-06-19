@@ -1,2 +1,2 @@
-pub mod circle;
+mod circle;
 pub use self::circle::*;

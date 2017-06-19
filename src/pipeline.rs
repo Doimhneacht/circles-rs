@@ -1,7 +1,7 @@
 use gfx;
 use gfx::format::{Srgba8, Rgba16F};
 
-use ::game::entities::circle::*;
+use ::game::entities::Circle;
 pub type ColorFormat = Srgba8;
 pub type DepthFormat = gfx::format::DepthStencil;
 

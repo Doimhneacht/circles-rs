@@ -1,4 +1,5 @@
 use std;
+use rand;
 
 gfx_defines! {
     vertex Circle {
@@ -14,11 +15,17 @@ impl Circle {
     // Construct new particles far away so they can't be seen initially
     pub fn new() -> Circle {
         Circle {
-            pos: [std::f32::INFINITY, std::f32::INFINITY],
+            pos: [0.0, 0.0],
             radius: 50.0,
             time: 0.0,
-            base_color: Default::default(),
-            new_color: Default::default(),
+            base_color: [rand::random(), rand::random(), rand::random(), 1.0],
+            new_color: [rand::random(), rand::random(), rand::random(), 1.0],
         }
+    }
+
+    pub fn swap_colors(&mut self) {
+        let temp = self.base_color;
+        self.base_color = self.new_color;
+        self.new_color = temp;
     }
 }

@@ -176,41 +176,6 @@ use pipeline::{ColorFormat, DepthFormat};
 //        // Draw the particles!
 //        self.bundle.encode(encoder);
 //    }
-//
-//    fn on_resize(&mut self, window_targets: gfx_app::WindowTargets<R>) {
-//        self.bundle.data.out_color = window_targets.color;
-//    }
-//
-//    fn on(&mut self, event: winit::WindowEvent) {
-//        match event {
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::W), _) => {
-//                self.camera.up = true;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::D), _) => {
-//                self.camera.right = true;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::S), _) => {
-//                self.camera.down = true;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::A), _) => {
-//                self.camera.left = true;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::W), _) => {
-//                self.camera.up = false;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::D), _) => {
-//                self.camera.right = false;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::S), _) => {
-//                self.camera.down = false;
-//            },
-//            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::A), _) => {
-//                self.camera.left = false;
-//            },
-//            _ => ()
-//        }
-//    }
-//}
 
 pub fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
@@ -231,16 +196,18 @@ pub fn main() {
 
     let mut running = true;
     while running {
-//        game.time_started = std::time::Instant::now();
+        game.update_time();
 
         events_loop.poll_events(|winit::Event::WindowEvent{window_id: _, event}| {
             match event {
                 winit::WindowEvent::Closed => { running = false },
-                _ => {},
+                _ => { game.process_event(&event) },
             }
         });
 
-        visualizer.render(&mut encoder);
+        game.play();
+
+        visualizer.render(&mut encoder, game.camera(), game.circle());
         encoder.flush(&mut device);
         window.swap_buffers().unwrap();
         device.cleanup();
