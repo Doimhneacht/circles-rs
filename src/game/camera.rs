@@ -1,39 +1,25 @@
-pub use self::inner::{Camera, MovableCamera};
+use cgmath::{Vector2, Zero};
 
-mod inner {
+pub struct Camera {
+    position: Vector2<f32>,
+    state: CameraState,
+}
+
+pub struct CameraState {
+    pub moving_up: bool,
+    pub moving_right: bool,
+    pub moving_down: bool,
+    pub moving_left: bool,
+}
+
+mod details {
     use cgmath::{Vector2, Basis2, Rotation, Rotation2, Zero, Deg};
 
-    pub struct Camera {
-        position: Vector2<f32>,
-        state: CameraState,
-    }
-
-    pub struct CameraState {
-        pub moving_up: bool,
-        pub moving_right: bool,
-        pub moving_down: bool,
-        pub moving_left: bool,
-    }
-
-    pub trait MovableCamera: MovableCameraHelper {
-        fn compute(&mut self, time: f32);
-
-        fn mut_state(&mut self) -> &mut CameraState;
-    }
-
-    trait MovableCameraHelper {
+    pub trait MovableCameraHelper {
         fn camera_speed(&self) -> Vector2<f32>;
     }
 
-    impl MovableCamera for Camera {
-        fn compute(&mut self, time: f32) {
-            self.position += self.camera_speed() * time;
-        }
-
-        fn mut_state(&mut self) -> &mut CameraState { &mut self.state }
-    }
-
-    impl MovableCameraHelper for Camera {
+    impl MovableCameraHelper for super::Camera {
         fn camera_speed(&self) -> Vector2<f32> {
             let angle = match (self.state.moving_up, self.state.moving_right, self.state.moving_down, self.state.moving_left) {
                 (true, true, false, false) => 45.0,
@@ -55,20 +41,35 @@ mod inner {
                 .rotate_vector(Vector2::new(200.0, 0.0))
         }
     }
+}
 
-    impl Camera {
-        pub fn new() -> Camera {
-            Camera {
-                position: Vector2::zero(),
-                state: CameraState {
-                    moving_up: false,
-                    moving_right: false,
-                    moving_down: false,
-                    moving_left: false,
-                }
+pub trait MovableCamera: details::MovableCameraHelper {
+    fn compute(&mut self, time: f32);
+
+    fn mut_state(&mut self) -> &mut CameraState;
+}
+
+impl MovableCamera for Camera {
+    fn compute(&mut self, time: f32) {
+        use self::details::MovableCameraHelper;
+        self.position += self.camera_speed() * time;
+    }
+
+    fn mut_state(&mut self) -> &mut CameraState { &mut self.state }
+}
+
+impl Camera {
+    pub fn new() -> Camera {
+        Camera {
+            position: Vector2::zero(),
+            state: CameraState {
+                moving_up: false,
+                moving_right: false,
+                moving_down: false,
+                moving_left: false,
             }
         }
-
-        pub fn position(&self) -> Vector2<f32> { self.position }
     }
+
+    pub fn position(&self) -> Vector2<f32> { self.position }
 }

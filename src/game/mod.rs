@@ -31,7 +31,6 @@ impl Game {
 
     pub fn update_time(&mut self) {
         let now = Instant::now();
-        let delta = now - self.last_frame_time;
         self.last_frame_elapsed = secs_duration(now - self.last_frame_time);
         self.last_frame_time = now;
         self.time_played = secs_duration(now - self.time_started);

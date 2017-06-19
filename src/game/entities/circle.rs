@@ -1,4 +1,3 @@
-use std;
 use rand;
 
 gfx_defines! {

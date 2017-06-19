@@ -15,7 +15,7 @@ const CLEAR_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 pub struct Visualizer<R>
     where R: gfx::Resources
 {
-    circles: Bundle<R, Circles::Data<R>>,
+    circles: Bundle<R, circles_pipeline::Data<R>>,
 }
 
 impl<R> Visualizer<R>
@@ -41,7 +41,7 @@ impl<R> Visualizer<R>
                 &shader_set,
                 Primitive::PointList,
                 Rasterizer::new_fill(),
-                Circles::new()
+                circles_pipeline::new()
             ).unwrap();
 
             let mut circle = Circle::new();
@@ -56,7 +56,7 @@ impl<R> Visualizer<R>
                 .expect("Failed to create vertex buffer");
             let slice = Slice::new_match_vertex_buffer(&vbuf);
 
-            let data = Circles::Data {
+            let data = circles_pipeline::Data {
                 vbuf: vbuf,
                 locals: factory.create_constant_buffer(1),
                 out: main_color,
