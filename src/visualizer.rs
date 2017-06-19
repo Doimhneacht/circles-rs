@@ -10,20 +10,24 @@ use rand;
 use ::game::entities::*;
 use pipeline::*;
 
+type RenderTarget<R> = gfx::handle::RenderTargetView<R, ColorFormat>;
+type DepthTarget<R> = gfx::handle::DepthStencilView<R, DepthFormat>;
+
 const CLEAR_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
 pub struct Visualizer<R>
     where R: gfx::Resources
 {
     circles: Bundle<R, circles_pipeline::Data<R>>,
+    main_depth: gfx::handle::DepthStencilView<R, DepthFormat>,
 }
 
 impl<R> Visualizer<R>
     where R: gfx::Resources
 {
     pub fn new<F>(mut factory: F,
-                  main_color: gfx::handle::RenderTargetView<R, ColorFormat>,
-                  _main_depth: gfx::handle::DepthStencilView<R, DepthFormat>)
+                  main_color: RenderTarget<R>,
+                  main_depth: DepthTarget<R>)
                   -> Visualizer<R>
         where F: gfx::Factory<R>
     {
@@ -67,6 +71,7 @@ impl<R> Visualizer<R>
 
         Visualizer {
             circles: circles,
+            main_depth: main_depth,
         }
     }
 
@@ -83,13 +88,15 @@ impl<R> Visualizer<R>
         );
         let scale = Matrix4::from_nonuniform_scale(scale_vector.x, scale_vector.y, scale_vector.z);
 
-         // Pass in the aspect ratio to the geometry shader
         let locals = Locals { transformation: (camera_translation * scale).into() };
         encoder.update_constant_buffer(&self.circles.data.locals, &locals);
-        // Update the vertex data with the changes to the particles array
         encoder.update_buffer(&self.circles.data.vbuf, &[*circle], 0).unwrap();
 
         encoder.clear(&self.circles.data.out, CLEAR_COLOR);
         self.circles.encode(encoder);
+    }
+
+    pub fn targets(&mut self) -> (&mut RenderTarget<R>, &mut DepthTarget<R>) {
+        (&mut self.circles.data.out, &mut self.main_depth)
     }
 }

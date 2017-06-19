@@ -26,10 +26,10 @@ pub fn main() {
 
     let events_loop = glutin::EventsLoop::new();
 
-    let (window, mut device, mut factory, main_color, main_depth) =
+    let (window, mut device, mut factory, color_target, depth_target) =
         gfx_window_glutin::init::<ColorFormat, DepthFormat>(builder, &events_loop);
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
-    let mut visualizer = visualizer::Visualizer::new(factory, main_color, main_depth);
+    let mut visualizer = visualizer::Visualizer::new(factory, color_target, depth_target);
 
     let mut game = Game::new();
 
@@ -40,6 +40,10 @@ pub fn main() {
         events_loop.poll_events(|winit::Event::WindowEvent{window_id: _, event}| {
             match event {
                 winit::WindowEvent::Closed => { running = false },
+                winit::WindowEvent::Resized(_, _) => {
+                    let (mut color_target, mut depth_target) = visualizer.targets();
+                    gfx_window_glutin::update_views(&window, color_target, depth_target);
+                },
                 _ => { game.process_event(&event) },
             }
         });
