@@ -50,7 +50,7 @@ pub fn main() {
 
         game.play();
 
-        visualizer.render(&mut encoder, game.camera(), game.circle());
+        visualizer.render(&mut encoder, game.player(), game.food());
         encoder.flush(&mut device);
         window.swap_buffers().unwrap();
         device.cleanup();

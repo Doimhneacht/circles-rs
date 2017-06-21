@@ -4,22 +4,30 @@ use gfx::state::Rasterizer;
 use gfx::traits::FactoryExt;
 use cgmath::{Matrix4, Vector3, ElementWise};
 use std::ops::Neg;
+use std::vec::Vec;
 
-use rand;
-
-use ::game::entities::*;
 use pipeline::*;
 
 type RenderTarget<R> = gfx::handle::RenderTargetView<R, ColorFormat>;
 type DepthTarget<R> = gfx::handle::DepthStencilView<R, DepthFormat>;
 
-const CLEAR_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+const CLEAR_COLOR: [f32; 4] = [0.1, 0.2, 0.3, 1.0];
 
 pub struct Visualizer<R>
     where R: gfx::Resources
 {
     circles: Bundle<R, circles_pipeline::Data<R>>,
     main_depth: gfx::handle::DepthStencilView<R, DepthFormat>,
+}
+
+gfx_defines! {
+    vertex CircleVertex {
+        position: [f32; 2] = "a_Position",
+        radius: f32 = "a_Radius",
+        time: f32 = "a_Time",
+        base_color: [f32; 4] = "a_BaseColor",
+        new_color: [f32; 4] = "a_NewColor",
+    }
 }
 
 impl<R> Visualizer<R>
@@ -48,16 +56,12 @@ impl<R> Visualizer<R>
                 circles_pipeline::new()
             ).unwrap();
 
-            let mut circle = Circle::new();
-            circle.pos = [0.0, 0.0];
-            circle.base_color = [rand::random(), rand::random(), rand::random(), 1.0];
-            circle.new_color = [rand::random(), rand::random(), rand::random(), 1.0];
-
-            let vbuf = factory.create_buffer(1,
+            let vbuf = factory.create_buffer(10,
                                              buffer::Role::Vertex,
                                              gfx::memory::Usage::Dynamic,
                                              Bind::empty())
                 .expect("Failed to create vertex buffer");
+
             let slice = Slice::new_match_vertex_buffer(&vbuf);
 
             let data = circles_pipeline::Data {
@@ -76,21 +80,25 @@ impl<R> Visualizer<R>
     }
 
     pub fn render<C>(&mut self, encoder: &mut gfx::Encoder<R, C>,
-                     camera: &::game::Camera,
-                     circle: &::game::entities::Circle)
+                     player: &::game::entities::Player,
+                     food: &Vec<::game::entities::Food>)
         where C: gfx::CommandBuffer<R>
     {
         let (width, height, _, _) = self.circles.data.out.get_dimensions();
 
         let scale_vector = Vector3::new(1.0 / width as f32 * 4.0, 1.0 / height as f32 * 4.0, 1.0);
         let camera_translation = Matrix4::from_translation(
-            camera.position().neg().extend(0.0).mul_element_wise(scale_vector)
+            player.circle.position.neg().extend(0.0).mul_element_wise(scale_vector)
         );
         let scale = Matrix4::from_nonuniform_scale(scale_vector.x, scale_vector.y, scale_vector.z);
 
         let locals = Locals { transformation: (camera_translation * scale).into() };
         encoder.update_constant_buffer(&self.circles.data.locals, &locals);
-        encoder.update_buffer(&self.circles.data.vbuf, &[*circle], 0).unwrap();
+
+        let mut entities: Vec<CircleVertex> = Vec::new();
+        entities.extend( food.iter().map(|ref entity| circle_to_vertex(&entity.circle)) );
+        entities.push(circle_to_vertex(&player.circle));
+        encoder.update_buffer(&self.circles.data.vbuf, &entities, 0).unwrap();
 
         encoder.clear(&self.circles.data.out, CLEAR_COLOR);
         self.circles.encode(encoder);
@@ -98,5 +106,15 @@ impl<R> Visualizer<R>
 
     pub fn targets(&mut self) -> (&mut RenderTarget<R>, &mut DepthTarget<R>) {
         (&mut self.circles.data.out, &mut self.main_depth)
+    }
+}
+
+fn circle_to_vertex(circle: &::game::entities::components::Circle) -> CircleVertex {
+    CircleVertex {
+        position: circle.position.into(),
+        radius: circle.radius,
+        time: circle.time,
+        base_color: circle.base_color.into(),
+        new_color: circle.new_color.into(),
     }
 }

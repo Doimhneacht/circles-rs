@@ -1,15 +1,14 @@
 use std::time::{Instant, Duration};
+use std::vec::Vec;
 use winit;
 
 pub mod entities;
-mod camera;
-
-pub use self::camera::Camera;
-use self::camera::MovableCamera;
+pub mod game_data;
+mod game_controller;
+mod player_controller;
 
 pub struct Game {
-    camera: Camera,
-    player: entities::Circle,
+    game_data: game_data::GameData,
     time_played: f32,
     last_frame_elapsed: f32,
     last_frame_time: Instant,
@@ -20,8 +19,7 @@ impl Game {
     pub fn new() -> Game {
         let now = Instant::now();
         Game {
-            camera: Camera::new(),
-            player: entities::Circle::new(),
+            game_data: game_data::GameData::new(),
             time_played: 0.0,
             last_frame_elapsed: 0.0,
             last_frame_time: now,
@@ -37,48 +35,16 @@ impl Game {
     }
 
     pub fn process_event(&mut self, event: &winit::WindowEvent) {
-        match *event {
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::W), _) => {
-                self.camera.mut_state().moving_up = true;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::D), _) => {
-                self.camera.mut_state().moving_right = true;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::S), _) => {
-                self.camera.mut_state().moving_down = true;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Pressed, _, Some(winit::VirtualKeyCode::A), _) => {
-                self.camera.mut_state().moving_left = true;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::W), _) => {
-                self.camera.mut_state().moving_up = false;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::D), _) => {
-                self.camera.mut_state().moving_right = false;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::S), _) => {
-                self.camera.mut_state().moving_down = false;
-            },
-            winit::WindowEvent::KeyboardInput(winit::ElementState::Released, _, Some(winit::VirtualKeyCode::A), _) => {
-                self.camera.mut_state().moving_left = false;
-            },
-            _ => ()
-        }
+        player_controller::process_event(&mut self.game_data.player, &event);
     }
 
     pub fn play(&mut self) {
-        self.player.time += self.last_frame_elapsed;
-        if self.player.time > 1.0 {
-            self.player.time %= 1.0;
-            self.player.swap_colors();
-        }
-
-        self.camera.compute(self.last_frame_elapsed);
+        player_controller::update(&mut self.game_data.player, self.last_frame_elapsed);
     }
 
-    pub fn camera(&self) -> &Camera { &self.camera }
+    pub fn player(&self) -> &entities::Player { &self.game_data.player }
 
-    pub fn circle(&self) -> &entities::Circle { &self.player }
+    pub fn food(&self) -> &Vec<entities::Food> { &self.game_data.food }
 }
 
 fn secs_duration(duration: Duration) -> f32 {
