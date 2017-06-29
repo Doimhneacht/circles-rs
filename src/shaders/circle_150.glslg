@@ -11,32 +11,29 @@ in VertexData {
 out VertexData {
     vec4 color;
     vec2 uv;
+    float radius;
 } VertexOut;
 
 uniform Locals {
     mat4 u_Transformation;
 };
 
-void main()
+void setVertex(vec2 uv)
 {
     float circleRadius = VertexIn[0].radius;
-    gl_Position = gl_in[0].gl_Position + u_Transformation * vec4(-circleRadius, -circleRadius, 0, 0);
-    VertexOut.color = VertexIn[0].color;
-    VertexOut.uv = vec2(-1, -1);
-    EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + u_Transformation * vec4(circleRadius, -circleRadius, 0, 0);
+    gl_Position = gl_in[0].gl_Position + u_Transformation * vec4(vec2(circleRadius) * uv, 0, 0);
     VertexOut.color = VertexIn[0].color;
-    VertexOut.uv = vec2(1, -1);
-    EmitVertex();
+    VertexOut.uv = uv;
+    VertexOut.radius = VertexIn[0].radius;
 
-    gl_Position = gl_in[0].gl_Position + u_Transformation * vec4(-circleRadius, circleRadius, 0, 0);
-    VertexOut.color = VertexIn[0].color;
-    VertexOut.uv = vec2(-1, 1);
     EmitVertex();
+}
 
-    gl_Position = gl_in[0].gl_Position + u_Transformation * vec4(circleRadius, circleRadius, 0, 0);
-    VertexOut.color = VertexIn[0].color;
-    VertexOut.uv = vec2(1, 1);
-    EmitVertex();
+void main()
+{
+    setVertex(vec2(-1, -1));
+    setVertex(vec2(1, -1));
+    setVertex(vec2(-1, 1));
+    setVertex(vec2(1, 1));
 }

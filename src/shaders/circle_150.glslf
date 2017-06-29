@@ -3,13 +3,16 @@
 in VertexData {
     vec4 color;
     vec2 uv;
+    float radius;
 } VertexIn;
 
 out vec4 Target0;
 
 void main() {
     float r = dot(VertexIn.uv, VertexIn.uv);
-    float d = 0.5;
+    float rd = 10;
+    float d = (VertexIn.radius - rd) / VertexIn.radius;
+
     float alpha = 1;
     if (r > 1) {
         alpha = 0;
