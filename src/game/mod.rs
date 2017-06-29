@@ -40,6 +40,7 @@ impl Game {
 
     pub fn play(&mut self) {
         player_controller::update(&mut self.game_data.player, self.last_frame_elapsed);
+        game_controller::update(&mut self.game_data, self.last_frame_elapsed);
     }
 
     pub fn player(&self) -> &entities::Player { &self.game_data.player }

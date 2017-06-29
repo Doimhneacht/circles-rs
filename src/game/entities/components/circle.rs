@@ -28,9 +28,19 @@ impl Circle {
         Circle {
             position: Vector2::new(rng.gen_range(-300.0, 300.0), rng.gen_range(-300.0, 300.0)),
             radius: rng.gen_range(10.0, 100.0),
-            time: 0.0,
+            time: rand::random(),
             base_color: Vector4::new(rand::random(), rand::random(), rand::random(), 1.0),
             new_color: Vector4::new(rand::random(), rand::random(), rand::random(), 1.0),
+        }
+    }
+
+    pub fn update(&mut self, time_delta: f32) {
+        self.time += time_delta;
+        if self.time > 1.0 {
+            self.time %= 1.0;
+            let temp = self.base_color;
+            self.base_color = self.new_color;
+            self.new_color = temp;
         }
     }
 }

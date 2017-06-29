@@ -36,21 +36,11 @@ pub fn process_event(player: &mut ControllablePlayer, event: &winit::WindowEvent
 
 pub fn update(mut player: &mut Player, time_delta: f32) {
     update_position(&mut player, time_delta);
-    update_color(&mut player.circle, time_delta);
+    player.circle.update(time_delta);
 }
 
 fn update_position(player: &mut Player, time_delta: f32) {
     player.circle.position += player_speed(player.mut_state()) * time_delta;
-}
-
-fn update_color(circle: &mut Circle, time_delta: f32) {
-    circle.time += time_delta;
-    if circle.time > 1.0 {
-        circle.time %= 1.0;
-        let temp = circle.base_color;
-        circle.base_color = circle.new_color;
-        circle.new_color = temp;
-    }
 }
 
 fn player_speed(player_state: &PlayerState) -> Vector2<f32> {
