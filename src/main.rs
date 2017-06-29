@@ -48,11 +48,13 @@ pub fn main() {
             }
         });
 
-        game.play();
+        if running {
+            game.play();
 
-        visualizer.render(&mut encoder, game.player(), game.food());
-        encoder.flush(&mut device);
-        window.swap_buffers().unwrap();
-        device.cleanup();
+            visualizer.render(&mut encoder, game.player(), game.food());
+            encoder.flush(&mut device);
+            window.swap_buffers().unwrap();
+            device.cleanup();
+        }
     }
 }
