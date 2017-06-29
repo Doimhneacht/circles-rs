@@ -13,11 +13,12 @@ type DepthTarget<R> = gfx::handle::DepthStencilView<R, DepthFormat>;
 
 const CLEAR_COLOR: [f32; 4] = [0.1, 0.2, 0.3, 1.0];
 
-pub struct Visualizer<R>
-    where R: gfx::Resources
+pub struct Visualizer<R, F>
+    where R: gfx::Resources, F: gfx::Factory<R>
 {
     circles: Bundle<R, circles_pipeline::Data<R>>,
     main_depth: gfx::handle::DepthStencilView<R, DepthFormat>,
+    factory: F,
 }
 
 gfx_defines! {
@@ -30,14 +31,13 @@ gfx_defines! {
     }
 }
 
-impl<R> Visualizer<R>
-    where R: gfx::Resources
+impl<R, F> Visualizer<R, F>
+    where R: gfx::Resources, F: gfx::Factory<R>
 {
-    pub fn new<F>(mut factory: F,
+    pub fn new(mut factory: F,
                   main_color: RenderTarget<R>,
                   main_depth: DepthTarget<R>)
-                  -> Visualizer<R>
-        where F: gfx::Factory<R>
+                  -> Visualizer<R, F>
     {
         let circles = {
             let shader_set = ShaderSet::Geometry(
@@ -56,7 +56,7 @@ impl<R> Visualizer<R>
                 circles_pipeline::new()
             ).unwrap();
 
-            let vbuf = factory.create_buffer(10,
+            let vbuf = factory.create_buffer(0,
                                              buffer::Role::Vertex,
                                              gfx::memory::Usage::Dynamic,
                                              Bind::empty())
@@ -76,6 +76,7 @@ impl<R> Visualizer<R>
         Visualizer {
             circles: circles,
             main_depth: main_depth,
+            factory: factory,
         }
     }
 
@@ -98,6 +99,14 @@ impl<R> Visualizer<R>
         let mut entities: Vec<CircleVertex> = Vec::new();
         entities.extend( food.iter().map(|ref entity| circle_to_vertex(&entity.circle)) );
         entities.push(circle_to_vertex(&player.circle));
+
+        self.circles.data.vbuf = self.factory.create_buffer(entities.len(),
+                                                       buffer::Role::Vertex,
+                                                       gfx::memory::Usage::Dynamic,
+                                                       Bind::empty())
+            .expect("Failed to create vertex buffer");
+        self.circles.slice = Slice::new_match_vertex_buffer(&self.circles.data.vbuf);
+
         encoder.update_buffer(&self.circles.data.vbuf, &entities, 0).unwrap();
 
         encoder.clear(&self.circles.data.out, CLEAR_COLOR);
